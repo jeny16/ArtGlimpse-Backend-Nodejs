@@ -4,7 +4,8 @@
   "description": "backend for artglimpse",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "dev": "nodemon server.js",
+    "start": "nodemon server.js"
   },
   "keywords": [
     "javascript",

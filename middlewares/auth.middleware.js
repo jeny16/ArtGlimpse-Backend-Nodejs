@@ -3,7 +3,7 @@ const User = require('../models/user.model');
 
 exports.protect = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer '))
+  if (!authHeader?.startsWith('Bearer'))
     return res.status(401).json({ msg: 'No token provided' });
 
   const token = authHeader.split(' ')[1];
