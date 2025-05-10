@@ -6,7 +6,10 @@ async function createProduct(data) {
 }
 
 async function getProductById(id) {
-  return await Product.findById(id);
+  return await Product
+    .findById(id)
+    .populate('category')   // now works, Category is registered
+    .exec();
 }
 
 async function updateProduct(id, data) {
@@ -18,7 +21,10 @@ async function deleteProduct(id) {
 }
 
 async function listProducts(filter = {}) {
-  return await Product.find(filter);
+  return await Product
+    .find(filter)
+    .populate('category')   // fixed spelling and ref
+    .exec();
 }
 
 module.exports = {

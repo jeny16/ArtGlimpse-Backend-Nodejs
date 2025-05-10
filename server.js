@@ -1,8 +1,12 @@
 require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
+const express  = require("express");
+const cors     = require("cors");
 const mongoose = require("mongoose");
-const authRouter = require("./routes/auth");
+
+require("./models/category.model");
+require("./models/product.model");
+
+const authRouter    = require("./routes/auth");
 const productRouter = require("./routes/product");
 
 const app = express();
@@ -14,12 +18,13 @@ mongoose
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB error:", err));
 
-app.use("/api/auth", authRouter);
-app.use('/api/products', productRouter);
+app.use("/api/auth",    authRouter);
+app.use("/api/products", productRouter);
 
 app.listen(process.env.PORT, () =>
   console.log(`🚀 Server running on port ${process.env.PORT}`)
 );
+
 
 // require('dotenv').config();
 // const express = require('express');
