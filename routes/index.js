@@ -1,24 +1,30 @@
 const express = require("express");
 
 const authRouter = require("./auth");
-const productRouter = require("./product");
-const router = express.Router();
+const productRouter  = require("./product");
+const categoryRouter = require("./category");   
 
-const defaultRoutes = [
-    {
-      path: "/auth",
-      route: authRouter,
-    },
-    {
-      path: "/products",
-      route: productRouter,
-    },
-  ];
+  const router = express.Router();
 
-  
-  defaultRoutes.forEach((route) => {
-    router.use(route.path, route.route);
-  });
-  
+  const defaultRoutes = [
+      {
+        path: "/auth",
+        route: authRouter,
+      },
+      {
+        path: "/products",
+        route: productRouter,
+      },
+      {
+       path: "/categories",    
+       route: categoryRouter,
+      },
+    ];
 
-module.exports = router;
+    
+    defaultRoutes.forEach((route) => {
+      router.use(route.path, route.route);
+    });
+    
+
+  module.exports = router;

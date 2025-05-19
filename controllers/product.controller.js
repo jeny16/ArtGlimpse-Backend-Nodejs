@@ -1,4 +1,5 @@
 const productService = require('../service/product.service');
+const Category     = require('../models/category.model');
 
 /** POST /api/products */
 async function createProductHandler(req, res, next) {
@@ -13,8 +14,51 @@ async function createProductHandler(req, res, next) {
 /** GET /api/products */
 async function listProductsHandler(req, res, next) {
   try {
-    const products = await productService.listProducts(req.query);
-    res.json(products);
+    const filter = {};
+
+    // ■ Only apply “category” filter if the client actually sent something non-empty
+    if (typeof req.query.categories === 'string' && req.query.categories.trim() !== '') {
+      const names = req.query.categories.split(',').map(s => s.trim()).filter(Boolean);
+      if (names.length) {
+        const cats = await Category.find({ name: { $in: names } }).select('_id');
+        filter.category = { $in: cats.map(c => c._id) };
+      }
+    }
+
+    // ■ Price
+    if (req.query.minPrice) filter.price = { ...filter.price, $gte: Number(req.query.minPrice) };
+    if (req.query.maxPrice) filter.price = { ...filter.price, $lte: Number(req.query.maxPrice) };
+
+    // ■ In-stock
+    if (req.query.inStockOnly === 'true') {
+      filter.stock = { $gt: 0 };
+    }
+
+    // ■ Discount
+    if (typeof req.query.discount === 'string' && req.query.discount.trim() !== '') {
+      const levels = req.query.discount.split(',').map(v => Number(v));
+      filter.percentage_Discount = { $in: levels };
+    }
+
+    // ■ Countries
+    if (typeof req.query.countries === 'string' && req.query.countries.trim() !== '') {
+      const list = req.query.countries.split(',').map(c => c.trim()).filter(Boolean);
+      filter.countries_Available = { $in: list };
+    }
+
+    // ■ Text search
+    if (req.query.search && req.query.search.trim() !== '') {
+      filter.name = { $regex: req.query.search.trim(), $options: 'i' };
+    }
+
+    // ■ Now hand off to service (which does .find(filter).populate('category')…)
+    const result = await productService.listProducts(filter, {
+      sortBy: req.query.sortBy,
+      page:   Number(req.query.page)   || 1,
+      limit:  Number(req.query.limit)  || 16,
+    });
+
+    res.json(result);
   } catch (err) {
     next(err);
   }
