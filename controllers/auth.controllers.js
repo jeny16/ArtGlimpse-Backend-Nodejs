@@ -23,7 +23,12 @@ exports.login = async (req, res) => {
   }
 };
 
-exports.getMe = (req, res) => {
-  // this assumes auth.middleware has set req.user
-  res.json({ user: req.user });
+// exports.getMe = (req, res) => {
+//   // this assumes auth.middleware has set req.user
+//   res.json({ user: req.user });
+// };
+
+exports.validate = (req, res) => {
+  // If we reach here, `protect` passed, so token is valid
+  res.status(200).json({ valid: true });
 };
