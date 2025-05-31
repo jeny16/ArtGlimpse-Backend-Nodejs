@@ -4,6 +4,8 @@ const authRouter = require("./auth");
 const productRouter = require("./product");
 const categoryRouter = require("./category");
 const wishlistRouter = require("./wishlist");
+const cartRouter = require('./cart')
+const paymentRouter = require('./payment')
 const validateRouter = require("./validate");
 const router = express.Router();
 
@@ -25,9 +27,17 @@ const defaultRoutes = [
     route: wishlistRouter,
   },
   {
+    path: "/cart",
+    route: cartRouter,
+  },
+  {
     path: "/validate",
     route: validateRouter,
   },
+  {
+    path: "/payment",
+    route: paymentRouter
+  }
 ];
 
 defaultRoutes.forEach((route) => {
