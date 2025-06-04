@@ -9,7 +9,6 @@ const instance = new Razorpay({
 
 exports.createOrder = async (req, res) => {
     const { amount, currency = "INR", receipt = "receipt_order_001" } = req.body;
-
     try {
         const options = {
             amount: amount * 100, // in paise

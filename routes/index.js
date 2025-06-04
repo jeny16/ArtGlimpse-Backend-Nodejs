@@ -4,9 +4,14 @@ const authRouter = require("./auth");
 const productRouter = require("./product");
 const categoryRouter = require("./category");
 const wishlistRouter = require("./wishlist");
-const cartRouter = require('./cart')
-const paymentRouter = require('./payment')
+const cartRouter = require("./cart");
+const paymentRouter = require("./payment");
 const validateRouter = require("./validate");
+const orderRouter = require("./order");
+
+// Import your new user‐profile routes
+const userRouter = require("./user");
+
 const router = express.Router();
 
 const defaultRoutes = [
@@ -36,8 +41,13 @@ const defaultRoutes = [
   },
   {
     path: "/payment",
-    route: paymentRouter
-  }
+    route: paymentRouter,
+  },
+  {
+    path: "/user",
+    route: userRouter,
+  },
+  { path: "/orders", route: orderRouter },
 ];
 
 defaultRoutes.forEach((route) => {
