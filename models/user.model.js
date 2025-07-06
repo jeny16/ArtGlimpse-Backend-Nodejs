@@ -22,13 +22,10 @@ const paymentMethodSchema = new Schema({
 
 
 const userSchema = new Schema({
-  // ————— Authentication / Core User Info —————
   username:          { type: String, required: true },
   email:             { type: String, required: true, unique: true },
   password:          { type: String, required: true },
-  role:              { type: String, enum: ['USER'], default: 'USER' },
-
-  // ————— Buyer Profile Fields —————
+  role:              { type: String, enum: ['USER', 'SELLER', 'ADMIN'], default: 'USER' },
   mobile:            { type: String },       
   gender:            { type: String },       
   dateOfBirth:       { type: String },      

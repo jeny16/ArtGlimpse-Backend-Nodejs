@@ -1,13 +1,10 @@
 // routes/order.js
-const express = require("express");
-const { createNewOrder, getOrdersByUserId } = require("../controllers/order.controller");
-
+const express = require('express');
 const router = express.Router();
+const orderCtrl = require('../controllers/order.controller');
 
-// POST /orders
-router.post("/", createNewOrder);
-
-// GET /orders/:userId
-router.get("/:userId", getOrdersByUserId);
+router.post('/',                orderCtrl.createNewOrder);
+router.get('/user/:userId',     orderCtrl.getOrdersByUserId);
+router.get('/seller/:sellerId', orderCtrl.getOrdersBySeller);
 
 module.exports = router;

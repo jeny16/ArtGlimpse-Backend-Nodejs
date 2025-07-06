@@ -1,91 +1,94 @@
+const mongoose = require('mongoose');
 const Cart = require('../models/cart.model');
-const Product = require('../models/product.model');
 
-exports.getCartByUserId = async (userId) => {
-  const cart = await Cart.findOne({ userId });
-  if (!cart) return null;
+function createHttpError(message, status = 400) {
+  const err = new Error(message);
+  err.status = status;
+  return err;
+}
 
-  const productIds = cart.items.map(item => item.productId);
-  const products = await Product.find({ _id: { $in: productIds } }).populate('category');
-
-  const productMap = {};
-  products.forEach(p => productMap[p._id.toString()] = p);
-
-  const enrichedItems = cart.items.map(item => ({
-    productId: item.productId,
-    quantity: item.quantity,
-    productData: productMap[item.productId.toString()] || null
-  }));
-
-  return {
-    userId: cart.userId,
-    items: enrichedItems
-  };
-};
-
-exports.createCart = async (userId) => {
-  const newCart = new Cart({ userId, items: [] });
-  return await newCart.save();
-};
-
-exports.addItemToCart = async (userId, productId, quantity) => {
-  // 1) Find the product so you know its price
-  const product = await Product.findById(productId);
-  if (!product) {
-    throw new Error("Product not found");
-  }
-
-  // 2) Find (or create) this user's cart
-  let cart = await Cart.findOne({ userId });
-  if (!cart) {
-    cart = new Cart({ userId, items: [] });
-  }
-
-  // 3) Calculate the price you want to store on the cart item
-  //    (either product.price or a discounted price if you have discounts)
-  let itemPrice = product.price;
-  if (product.discount && product.percentage_Discount) {
-    // If you want to store discounted price:
-    itemPrice = product.price - (product.price * product.percentage_Discount) / 100;
-  }
-
-  // 4) Check if this item is already in the cart
-  const itemIndex = cart.items.findIndex(
-    (item) => item.productId.toString() === productId
-  );
-
-  if (itemIndex > -1) {
-    // If it’s already there, update quantity and (optionally) price
-    cart.items[itemIndex].quantity += quantity;
-    cart.items[itemIndex].price = itemPrice;
-  } else {
-    // If it’s brand-new, push an object that includes price
-    cart.items.push({
-      productId: productId,
-      quantity: quantity,
-      price: itemPrice,  // ← Now price is included, matching your schema
-    });
-  }
-
-  // 5) Save and return the updated cart
+async function saveAndPopulate(cart) {
   await cart.save();
-  return await exports.getCartByUserId(userId);
-};
+  return await cart.populate("items.productId");
+}
 
-exports.removeItemFromCart = async (userId, productId) => {
-  const cart = await Cart.findOne({ userId });
-  if (!cart) return null;
+module.exports = {
+  async getCartByUserId(userId) {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw createHttpError('Invalid userId format');
+    }
+    return await Cart.findOne({ userId }).populate("items.productId");
+  },
 
-  cart.items = cart.items.filter(item => item.productId.toString() !== productId);
-  await cart.save();
-  return await exports.getCartByUserId(userId);
-};
+  async addItemToCart(userId, productId, quantity) {
+    if (
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !mongoose.Types.ObjectId.isValid(productId) ||
+      typeof quantity !== 'number' ||
+      quantity < 1
+    ) {
+      throw createHttpError('Invalid cart parameters');
+    }
 
-exports.clearCart = async (userId) => {
-  const cart = await Cart.findOne({ userId });
-  if (!cart) return null;
+    let cart = await Cart.findOne({ userId });
+    if (!cart) {
+      cart = new Cart({ userId, items: [] });
+    }
 
-  cart.items = [];
-  await cart.save();
-  return await exports.getCartByUserId(userId);
+    const idx = cart.items.findIndex(i => i.productId.equals(productId));
+    if (idx > -1) {
+      cart.items[idx].quantity += quantity;
+    } else {
+      cart.items.push({ productId, quantity });
+    }
+
+    return await saveAndPopulate(cart);
+  },
+
+  async updateItemQuantity(userId, productId, quantity) {
+    if (
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !mongoose.Types.ObjectId.isValid(productId) ||
+      typeof quantity !== 'number' ||
+      quantity < 1
+    ) {
+      throw createHttpError('Invalid update parameters');
+    }
+
+    const cart = await Cart.findOne({ userId });
+    if (!cart) throw createHttpError('Cart not found', 404);
+
+    const item = cart.items.find(i => i.productId.equals(productId));
+    if (!item) throw createHttpError('Product not in cart', 404);
+
+    item.quantity = quantity;
+    return await saveAndPopulate(cart);
+  },
+
+  async removeItemFromCart(userId, productId) {
+    if (
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !mongoose.Types.ObjectId.isValid(productId)
+    ) {
+      throw createHttpError('Invalid remove parameters');
+    }
+
+    const cart = await Cart.findOne({ userId });
+    if (!cart) throw createHttpError('Cart not found', 404);
+
+    cart.items = cart.items.filter(i => !i.productId.equals(productId));
+    return await saveAndPopulate(cart);
+  },
+
+  async clearCart(userId) {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw createHttpError('Invalid userId format');
+    }
+
+    const cart = await Cart.findOne({ userId });
+    if (!cart) throw createHttpError('Cart not found', 404);
+
+    cart.items = [];
+    return await saveAndPopulate(cart);
+  }
 };

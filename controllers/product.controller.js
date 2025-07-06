@@ -1,5 +1,6 @@
 const productService = require('../service/product.service');
 const Category     = require('../models/category.model');
+// const Product        = require('../models/product.model'); 
 
 /** POST /api/products */
 async function createProductHandler(req, res, next) {
@@ -67,6 +68,7 @@ async function listProductsHandler(req, res, next) {
 /** GET /api/products/:id */
 async function getProductHandler(req, res, next) {
   try {
+    console.log("consoling:::", req)
     const prod = await productService.getProductById(req.params.id);
     if (!prod) return res.status(404).json({ message: 'Product not found' });
     res.json(prod);
@@ -97,10 +99,36 @@ async function deleteProductHandler(req, res, next) {
   }
 }
 
+const mongoose = require('mongoose');
+const Product  = require('../models/product.model');
+
+async function getProductsBySellerHandler(req, res, next) {
+  try {
+    const { sellerId } = req.params;
+    if (!sellerId) {
+      return res.status(400).json({ message: 'sellerId path parameter is required' });
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(sellerId)) {
+      return res.status(400).json({ message: 'Invalid sellerId format' });
+    }
+
+    // Fetch products
+    const products = await Product.find({ seller: sellerId });
+
+    return res.json({ success: true, products });
+  } catch (err) {
+    next(err);
+  }
+}
+
+
 module.exports = {
   createProductHandler,
   listProductsHandler,
   getProductHandler,
   updateProductHandler,
-  deleteProductHandler
+  deleteProductHandler,
+  getProductsBySellerHandler
 };
