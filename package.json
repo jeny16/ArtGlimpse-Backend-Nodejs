@@ -21,6 +21,7 @@
     "http-status": "^2.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.14.0",
+    "multer": "^2.0.1",
     "razorpay": "^2.9.6"
   }
 }

@@ -9,7 +9,23 @@ const httpStatus = require("http-status");
 const routes = require("./routes/index");
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174'
+];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // browser calls from “null” origin on local files—allow that too if needed
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
     
 app.use("/api/", routes);
