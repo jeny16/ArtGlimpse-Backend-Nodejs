@@ -7,6 +7,7 @@ exports.getCartByUserId = async (req, res) => {
     const { userId } = req.params;
     const cart = await Cart.findOne({ userId }).populate("items.productId");
     if (!cart) return res.status(404).json({ message: "Cart not found" });
+    // console.log("cart item", cart)
     res.status(200).json(cart);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -87,5 +88,18 @@ exports.removeItemFromCart = async (req, res) => {
     res.status(200).json(populatedCart);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+exports.clearCartController = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    // Option A: remove the entire document
+    await Cart.findOneAndDelete({ userId });
+    // Option B: keep the cart doc but empty items array
+    // await Cart.updateOne({ userId }, { items: [] });
+    res.status(200).json({ items: [], couponCode: null, donationAmount: 0 });
+  } catch (err) {
+    next(err);
   }
 };

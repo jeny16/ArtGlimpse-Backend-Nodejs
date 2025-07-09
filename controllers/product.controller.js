@@ -5,7 +5,6 @@ const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const productService = require("../service/product.service");
 const productModel = require("../models/product.model");
 
-// Initialize S3 client
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
@@ -144,7 +143,7 @@ async function getProductsBySellerHandler(req, res, next) {
     if (!mongoose.Types.ObjectId.isValid(sellerId)) {
       return res.status(400).json({ message: "Invalid sellerId format" });
     }
-    const products = await productModel.find({ seller: sellerId });
+    const products = await productModel.find({ seller: sellerId }).populate("category");;
     return res.json({ success: true, products });
   } catch (err) {
     next(err);

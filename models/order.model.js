@@ -23,6 +23,10 @@ const OrderSchema = new Schema(
         },
         price: {
           type: Number // you can store a price snapshot here if you want
+        },
+        seller: {
+          type : mongoose.Schema.Types.ObjectId,
+          required: true
         }
       }
     ],
@@ -45,8 +49,8 @@ const OrderSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["Pending", "Processing", "Completed", "Cancelled"],
-      default: "Pending"
+      enum: ["New", "Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
+      default: "New"
     }
   },
   { timestamps: true }

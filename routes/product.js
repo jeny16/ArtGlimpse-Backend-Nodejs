@@ -13,18 +13,17 @@ const {
 const upload = multer(); // memory storage
 const router = express.Router();
 
-// POST with multipart/form-data (files and fields)
 router.post(
   '/', 
-  upload.any(),           // accept any file fields (e.g. image_0, image_1...)
+  upload.any(),           
   createProductHandler
 );
 
-// Other product routes
+
 router.get('/', listProductsHandler);
 router.get('/seller/:sellerId', getProductsBySellerHandler);
 router.get('/:id', getProductHandler);
-router.put('/:id', express.json(), updateProductHandler); // JSON for updates
+router.patch('/:id', express.json(), updateProductHandler); 
 router.delete('/:id', deleteProductHandler);
 
 module.exports = router;
