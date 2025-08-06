@@ -86,18 +86,14 @@ async function createProductHandler(req, res, next) {
 /** GET /api/products */
 async function listProductsHandler(req, res, next) {
   try {
-    const filter = {};
-    // your existing filter logic...
-    const result = await productService.listProducts(filter, {
-      sortBy: req.query.sortBy,
-      page: Number(req.query.page) || 1,
-      limit: Number(req.query.limit) || 16,
-    });
+    const { filter, options } = parseProductQuery(req.query); // 🔥 use this parser
+    const result = await productService.listProducts(filter, options);
     res.json(result);
   } catch (err) {
     next(err);
   }
 }
+
 
 /** GET /api/products/:id */
 async function getProductHandler(req, res, next) {
@@ -149,6 +145,43 @@ async function getProductsBySellerHandler(req, res, next) {
     next(err);
   }
 }
+
+function parseProductQuery(query) {
+  const filter = {};
+
+  if (query.categories) {
+    filter.category = { $in: query.categories.split(',') };
+  }
+
+  if (query.minPrice || query.maxPrice) {
+    filter.price = {};
+    if (query.minPrice) filter.price.$gte = Number(query.minPrice);
+    if (query.maxPrice) filter.price.$lte = Number(query.maxPrice);
+  }
+
+  if (query.inStockOnly === 'true') {
+    filter.stock = { $gt: 0 };
+  }
+
+  if (query.discount) {
+    filter.discount = { $gte: Number(query.discount) };
+  }
+
+  if (query.countries) {
+    filter.origin = { $in: query.countries.split(',') };
+  }
+
+  if (query.search) {
+    filter.name = { $regex: query.search, $options: 'i' };
+  }
+
+  const sortBy = query.sortBy || 'createdAt:desc';
+  const page = parseInt(query.page, 10) || 1;
+  const limit = parseInt(query.limit, 10) || 16;
+
+  return { filter, options: { sortBy, page, limit } };
+}
+
 
 module.exports = {
   createProductHandler,

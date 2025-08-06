@@ -1,49 +1,60 @@
 const mongoose = require("mongoose");
 const Order = require("../models/order.model");
 
-module.exports = {
-  
-  async createOrder(orderData) {
-    const { userId, items, totalAmount, shippingAddress, paymentInfo } = orderData;
+const STATUS_FLOW = ["New", "Pending", "Processing", "Shipped", "Delivered", "Cancelled"];
 
-    // Validate required fields
+function isValidStatusTransition(currentStatus, newStatus) {
+  const currentIndex = STATUS_FLOW.indexOf(currentStatus);
+  const newIndex = STATUS_FLOW.indexOf(newStatus);
+  return newIndex > currentIndex; // only allow forward
+}
+
+module.exports = {
+  async createOrder(orderData) {
+    const {
+      userId,
+      items,
+      totalAmount,
+      shippingAddress,
+      paymentInfo,
+      paymentType,
+      paymentStatus,
+    } = orderData;
+
+    // 1️⃣ Validate
     if (
       !userId ||
       !mongoose.Types.ObjectId.isValid(userId) ||
       !Array.isArray(items) ||
       items.length === 0 ||
       typeof totalAmount !== "number" ||
-      !shippingAddress
+      !shippingAddress ||
+      !["cashOnDelivery", "razorpay"].includes(paymentType) ||
+      !["Pending", "Paid", "Failed", "Refunded", "Cancelled"].includes(
+        paymentStatus
+      )
     ) {
       const err = new Error("Missing or invalid required fields");
       err.status = 400;
       throw err;
     }
 
-    // Build items array using productData provided from client
+    // 2️⃣ Shape items
     const itemsWithSeller = items.map((item) => {
-      const prodData = item.productData || {};
-      let prodId = prodData._id || item.productId;
-
-      // Extract nested _id if it's an object
-      if (prodId && typeof prodId === 'object' && prodId._id) {
+      const prod = item.productData || {};
+      let prodId = prod._id || item.productId;
+      if (prodId && typeof prodId === "object" && prodId._id) {
         prodId = prodId._id;
       }
-      // Coerce to string if still an object
-      if (typeof prodId !== 'string') {
-        prodId = String(prodId);
-      }
-
-      // Validate ObjectId
+      if (typeof prodId !== "string") prodId = String(prodId);
       if (!mongoose.Types.ObjectId.isValid(prodId)) {
-        throw new Error(`Invalid productId: ${JSON.stringify(prodId)}`);
+        throw new Error(`Invalid productId: ${prodId}`);
       }
-
-      const sellerId = prodData.seller;
+      const sellerId = prod.seller;
       return {
         productId: new mongoose.Types.ObjectId(prodId),
         quantity: item.quantity,
-        price: Number(prodData.price) || 0,
+        price: Number(prod.price) || 0,
         seller:
           sellerId && mongoose.Types.ObjectId.isValid(sellerId)
             ? new mongoose.Types.ObjectId(sellerId)
@@ -51,19 +62,24 @@ module.exports = {
       };
     });
 
-    // Create and save order
+    // 3️⃣ Save
     const newOrder = new Order({
       userId: new mongoose.Types.ObjectId(userId),
       items: itemsWithSeller,
       totalAmount,
       shippingAddress,
-      paymentInfo: {
-        razorpayPaymentId: paymentInfo?.razorpayPaymentId || null,
-      },
-      status: 'New',
+      paymentType,
+      paymentStatus,
+      ...(paymentType === "razorpay" && {
+        paymentInfo: {
+          razorpayOrderId: paymentInfo?.razorpayOrderId || null,
+          razorpayPaymentId: paymentInfo?.razorpayPaymentId || null,
+        },
+      }),
+      status: "New",
     });
 
-    return await newOrder.save();
+    return newOrder.save();
   },
 
   async getOrdersByUser(userId) {
@@ -72,9 +88,9 @@ module.exports = {
       err.status = 400;
       throw err;
     }
-    return await Order.find({ userId })
+    return Order.find({ userId })
       .sort({ createdAt: -1 })
-      .populate({ path: "items.productId" });
+      .populate("items.productId");
   },
 
   async getOrdersBySeller(sellerId) {
@@ -83,9 +99,39 @@ module.exports = {
       err.status = 400;
       throw err;
     }
-    return await Order.find({ "items.seller": sellerId })
+    return Order.find({ "items.seller": sellerId })
       .sort({ createdAt: -1 })
-      .populate({ path: "items.productId", model: "Product" })
+      .populate("items.productId")
       .lean();
   },
+
+  async updateOrderById(orderId, updateData) {
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      const err = new Error("Invalid orderId format");
+      err.status = 400;
+      throw err;
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      const err = new Error("Order not found");
+      err.status = 404;
+      throw err;
+    }
+
+    if (
+      updateData.status &&
+      updateData.status !== order.status &&
+      !isValidStatusTransition(order.status, updateData.status)
+    ) {
+      const err = new Error(`Invalid status transition from "${order.status}" to "${updateData.status}"`);
+      err.status = 400;
+      throw err;
+    }
+
+    Object.assign(order, updateData);
+    return await order.save();
+  },
 };
+
+
