@@ -9,4 +9,4 @@ router.post('/login',  login);
 router.post('/seller/signup', sellerSignup);
 router.post('/seller/login', sellerLogin);
 
-module.exports = router;    
+module.exports = router;
