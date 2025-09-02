@@ -1,13 +1,12 @@
 const express = require('express');
-const { signup, login, getMe } = require('../controllers/auth.controllers');
+const { signup, login,sellerSignup, sellerLogin, getMe } = require('../controllers/auth.controllers');
 const { protect }              = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
 router.post('/signup', signup);
 router.post('/login',  login);
+router.post('/seller/signup', sellerSignup);
+router.post('/seller/login', sellerLogin);
 
-// protected “get me” example:
-router.get('/me', protect, getMe);
-
-module.exports = router;    
+module.exports = router;
