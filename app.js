@@ -12,7 +12,8 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
-  'https://art-glimpse-frontend-nodejs.vercel.app'
+  'https://art-glimpse-frontend-nodejs.vercel.app',
+  'https://art-glimpse-seller-node-js-99tm.vercel.app'
 ];
 
 app.use(cors({
